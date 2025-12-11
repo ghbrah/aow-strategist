@@ -57,8 +57,8 @@ export default async (req: Request) => {
   }
 
   if (!apiKey) {
-    console.error("Server Error: API_KEY is missing in Netlify environment variables.");
-    return new Response(JSON.stringify({ error: "Server configuration error. API Key missing." }), {
+    console.error("Server Error: GEMINI_API_KEY is missing in Netlify environment variables.");
+    return new Response(JSON.stringify({ error: "Server configuration error. GEMINI_API_KEY missing." }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
