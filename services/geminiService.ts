@@ -4,7 +4,7 @@ export const getStrategicAdvice = async (userQuery: string): Promise<StrategyAdv
   try {
     // We now call our own backend API (Netlify Function)
     // The netlify.toml redirects /api/* to the function
-    const response = await fetch('/api/get-strategy', {
+    const response = await fetch('/.netlify/functions/get-strategy', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
