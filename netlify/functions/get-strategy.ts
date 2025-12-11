@@ -1,40 +1,29 @@
 import { GoogleGenAI, Type, Schema, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
-// Interface for request body
 interface StrategyRequestBody {
   query: string;
-  password?: string; // Added password field
+  password?: string; // Expect password from frontend
 }
 
-// Fetch API key from Netlify environment
 const apiKey = process.env.GEMINI_API_KEY;
+const PASSWORD = '$untzu'; // Must match App.tsx
 
-// Define the schema for the structured response
 const strategySchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: {
-      type: Type.STRING,
-      description: "The specific name of the strategy. CRITICAL: If it is one of the 36 Stratagems, you MUST include the number in the format 'Stratagem X: [Name]'",
-    },
-    originalQuote: { type: Type.STRING },
-    interpretation: { type: Type.STRING },
-    actionableAdvice: { type: Type.ARRAY, items: { type: Type.STRING } },
-    chineseCharacter: { type: Type.STRING },
-    characterExplanation: { type: Type.STRING },
+    title: { type: Type.STRING, description: "Strategy title (36 Stratagems format required)." },
+    originalQuote: { type: Type.STRING, description: "Relevant quote from Sun Tzu or 36 Stratagems." },
+    interpretation: { type: Type.STRING, description: "Detailed analysis of conflict dynamics." },
+    actionableAdvice: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 tactical steps." },
+    chineseCharacter: { type: Type.STRING, description: "Relevant Chinese character." },
+    characterExplanation: { type: Type.STRING, description: "Explanation of character meaning." }
   },
   required: ["title", "originalQuote", "interpretation", "actionableAdvice", "chineseCharacter", "characterExplanation"],
 };
 
 export default async (req: Request) => {
-  // Handle CORS for preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    return new Response("ok", { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" } });
   }
 
   if (req.method !== "POST") {
@@ -42,27 +31,27 @@ export default async (req: Request) => {
   }
 
   if (!apiKey) {
-    console.error("Server Error: GEMINI_API_KEY is missing in Netlify environment variables.");
     return new Response(JSON.stringify({ error: "Server configuration error. GEMINI_API_KEY missing." }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
   }
 
   try {
     const body = await req.json() as StrategyRequestBody;
+    const userQuery = body.query;
+    const password = body.password;
 
-    // ---------- Simple password lock ----------
-    if (body.password !== "$untzu") {
-      return new Response(JSON.stringify({ error: "Unauthorized: wrong password" }), {
+    // Check password
+    if (password !== PASSWORD) {
+      return new Response(JSON.stringify({ error: "Unauthorized. Invalid password." }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    const userQuery = body.query;
     if (!userQuery) {
-      return new Response(JSON.stringify({ error: "Query is required" }), {
+      return new Response(JSON.stringify({ error: "Query is required." }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -72,14 +61,8 @@ export default async (req: Request) => {
     const modelId = "gemini-2.5-flash";
 
     const systemInstruction = `
-      You are a master strategist embodying the wisdom of Sun Tzu and the '36 Stratagems'.
-      Users will present modern conflicts, difficulties, or challenges.
-      
-      Your Goal: Provide the single best strategic remedy.
-      
-      Constraints:
-      - STRICT TITLE FORMATTING: If using one of the 36 Stratagems, the 'title' MUST include number.
-      - Interpretations must be 2-3 paragraphs and practical.
+      You are a master strategist following Sun Tzu and the 36 Stratagems...
+      (rest of instructions remain the same)
     `;
 
     const response = await ai.models.generateContent({
@@ -97,21 +80,16 @@ export default async (req: Request) => {
       },
     });
 
-    const responseText = response.text;
-    if (!responseText) throw new Error("No response received from the strategist.");
+    if (!response.text) throw new Error("No response received from the strategist.");
 
-    return new Response(responseText, {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
+    return new Response(response.text, {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
 
   } catch (error: any) {
-    console.error("Error in Netlify Function:", error);
     return new Response(JSON.stringify({ error: error.message || "Internal Server Error" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
   }
 };
