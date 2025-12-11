@@ -2,11 +2,11 @@
 import { StrategyAdvice } from "../types";
 
 /**
- * Fetches strategic advice from your Netlify function with password lock
+ * Fetches strategic advice from your Netlify function with password validation
  * and automatic retry on model overload (503) errors.
  * 
  * @param userQuery - The user's query describing a conflict or challenge.
- * @param password - Password entered by the user.
+ * @param password - The password typed by the user.
  * @param retries - Number of retry attempts on 503 errors (default: 2)
  * @param delayMs - Delay between retries in milliseconds (default: 1500)
  * @returns A StrategyAdvice object matching your interface.
@@ -40,7 +40,7 @@ export const getStrategicAdvice = async (
 
     const data: StrategyAdvice = await response.json();
 
-    // Optional: ensure optional fields exist
+    // Ensure optional fields exist
     return {
       title: data.title,
       originalQuote: data.originalQuote,
