@@ -6,12 +6,14 @@ import { StrategyAdvice } from "../types";
  * and automatic retry on model overload (503) errors.
  * 
  * @param userQuery - The user's query describing a conflict or challenge.
+ * @param password - Password entered by the user.
  * @param retries - Number of retry attempts on 503 errors (default: 2)
  * @param delayMs - Delay between retries in milliseconds (default: 1500)
  * @returns A StrategyAdvice object matching your interface.
  */
 export const getStrategicAdvice = async (
   userQuery: string,
+  password: string,
   retries = 2,
   delayMs = 1500
 ): Promise<StrategyAdvice> => {
@@ -19,7 +21,7 @@ export const getStrategicAdvice = async (
     const response = await fetch('/.netlify/functions/get-strategy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: userQuery, password: '$untzu' }),
+      body: JSON.stringify({ query: userQuery, password }),
     });
 
     if (!response.ok) {
@@ -30,7 +32,7 @@ export const getStrategicAdvice = async (
       if (status === 503 && retries > 0) {
         console.warn(`Model overloaded (503). Retrying in ${delayMs}ms...`);
         await new Promise(res => setTimeout(res, delayMs));
-        return getStrategicAdvice(userQuery, retries - 1, delayMs);
+        return getStrategicAdvice(userQuery, password, retries - 1, delayMs);
       }
 
       throw new Error(errorData.error || `Server error: ${status}`);
