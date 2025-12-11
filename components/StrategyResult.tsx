@@ -1,6 +1,7 @@
 // src/components/StrategyResult.tsx
 import React from 'react';
 import { StrategyAdvice } from '../types';
+import { X } from 'lucide-react';
 
 interface StrategyResultProps {
   advice: StrategyAdvice;
@@ -9,39 +10,54 @@ interface StrategyResultProps {
 
 const StrategyResult: React.FC<StrategyResultProps> = ({ advice, onReset }) => {
   return (
-    <div className="max-w-3xl w-full mx-auto mt-6 p-6 bg-white dark:bg-jade-900 rounded-lg shadow-lg overflow-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold serif-title">{advice.title}</h2>
+    <div className="w-full max-w-3xl mx-auto mt-8 p-6 bg-white dark:bg-jade-900 rounded-lg shadow-lg flex flex-col gap-6 transition-all">
+      <div className="flex justify-between items-start">
+        <h2 className="text-2xl font-semibold serif-title text-jade-900 dark:text-jade-100">
+          {advice.title}
+        </h2>
         <button
           onClick={onReset}
-          className="py-1 px-3 bg-imperial-700 hover:bg-imperial-800 text-white rounded text-sm"
+          className="text-jade-500 dark:text-jade-400 hover:text-imperial-700 dark:hover:text-imperial-500 transition-colors"
+          aria-label="Reset"
         >
-          Reset
+          <X className="w-5 h-5" />
         </button>
       </div>
 
-      <p className="italic mb-4">{advice.originalQuote}</p>
+      {advice.originalQuote && (
+        <blockquote className="border-l-4 border-imperial-600 dark:border-imperial-500 pl-4 italic text-jade-800 dark:text-jade-200">
+          {advice.originalQuote}
+        </blockquote>
+      )}
 
-      <div className="mb-4 whitespace-pre-wrap">{advice.interpretation}</div>
+      {advice.interpretation && (
+        <section>
+          <h3 className="text-xl font-semibold text-jade-900 dark:text-jade-100 mb-2">Interpretation</h3>
+          <p className="text-jade-800 dark:text-jade-200 whitespace-pre-line">{advice.interpretation}</p>
+        </section>
+      )}
 
       {advice.actionableAdvice && advice.actionableAdvice.length > 0 && (
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2">Actionable Advice:</h3>
-          <ul className="list-disc list-inside space-y-1">
+        <section>
+          <h3 className="text-xl font-semibold text-jade-900 dark:text-jade-100 mb-2">Actionable Advice</h3>
+          <ul className="list-disc list-inside space-y-1 text-jade-800 dark:text-jade-200">
             {advice.actionableAdvice.map((item, idx) => (
               <li key={idx}>{item}</li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {advice.chineseCharacter && (
-        <div className="mb-2">
-          <span className="text-3xl font-bold">{advice.chineseCharacter}</span>
-          {advice.characterExplanation && (
-            <p className="inline ml-2">{advice.characterExplanation}</p>
-          )}
-        </div>
+        <section>
+          <h3 className="text-xl font-semibold text-jade-900 dark:text-jade-100 mb-2">Key Character</h3>
+          <div className="flex items-center gap-4">
+            <span className="text-4xl">{advice.chineseCharacter}</span>
+            {advice.characterExplanation && (
+              <p className="text-jade-800 dark:text-jade-200">{advice.characterExplanation}</p>
+            )}
+          </div>
+        </section>
       )}
     </div>
   );
