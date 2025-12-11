@@ -13,8 +13,12 @@ const App: React.FC = () => {
   const [advice, setAdvice] = useState<StrategyAdvice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  
-  const resultRef = useRef<HTMLDivElement>(null);
+
+  // Password & query input combined
+  const [passwordInput, setPasswordInput] = useState('');
+  const [queryInput, setQueryInput] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const PASSWORD = '$untzu';
 
   // Theme
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -24,6 +28,8 @@ const App: React.FC = () => {
     }
     return 'dark';
   });
+
+  const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -47,23 +53,35 @@ const App: React.FC = () => {
     localStorage.setItem('art_of_war_history', JSON.stringify(newHistory));
   };
 
-  // Handle consultation
-  const handleConsultation = async (query: string, password: string) => {
-    setLoading(true);
+  // Handle submission (password + query)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
     setAdvice(null);
 
+    if (passwordInput !== PASSWORD) {
+      setPasswordError("Incorrect password.");
+      return;
+    }
+    setPasswordError(null);
+
+    if (!queryInput.trim()) {
+      setError("Please enter a query describing your conflict.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const result = await getStrategicAdvice(query, password); // pass password dynamically
+      const result = await getStrategicAdvice(queryInput, passwordInput);
       setAdvice(result);
 
       const newItem: HistoryItem = {
         id: Date.now().toString(),
-        query,
+        query: queryInput,
         advice: result,
         timestamp: Date.now(),
       };
-
       saveHistory([newItem, ...history]);
 
       setTimeout(() => {
@@ -71,7 +89,7 @@ const App: React.FC = () => {
       }, 100);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "The strategist is silent. Check your internet connection and try again.");
+      setError("The strategist is silent. Check your internet connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -80,6 +98,8 @@ const App: React.FC = () => {
   const handleReset = () => {
     setAdvice(null);
     setError(null);
+    setQueryInput('');
+    setPasswordInput('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -99,22 +119,51 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-jade-50 dark:bg-jade-950 text-jade-900 dark:text-jade-100 flex flex-col relative selection:bg-imperial-200 dark:selection:bg-imperial-900 selection:text-jade-900 dark:selection:text-white transition-colors duration-300">
-      
+
       <Header theme={theme} toggleTheme={toggleTheme} />
 
       <main className="flex-grow flex flex-col items-center w-full relative z-10">
+        {/* Password + query form */}
         {!advice && (
-          <ConsultationForm onSubmit={handleConsultation} isLoading={loading} />
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-md w-full mt-20 mx-auto p-6 bg-white dark:bg-jade-900 rounded-lg shadow-lg flex flex-col gap-4"
+          >
+            <h2 className="text-center text-2xl serif-title">Consult the Strategist</h2>
+
+            <input
+              type="password"
+              className="w-full p-3 rounded border border-jade-300 dark:border-jade-700 bg-jade-50 dark:bg-jade-950 text-jade-900 dark:text-jade-100"
+              value={passwordInput}
+              onChange={e => setPasswordInput(e.target.value)}
+              placeholder="Enter password..."
+            />
+
+            <textarea
+              className="w-full h-32 p-4 rounded border border-jade-300 dark:border-jade-700 bg-jade-50 dark:bg-jade-950 text-jade-900 dark:text-jade-100 resize-none"
+              value={queryInput}
+              onChange={e => setQueryInput(e.target.value)}
+              placeholder="Describe your conflict or challenge..."
+            />
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-imperial-700 hover:bg-imperial-800 text-white font-semibold rounded disabled:opacity-50"
+            >
+              {loading ? "Consulting the Strategist..." : "Seek Counsel"}
+            </button>
+
+            {passwordError && <p className="text-red-600 text-center">{passwordError}</p>}
+            {error && (
+              <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded text-red-800 dark:text-red-200 text-center">
+                {error}
+              </div>
+            )}
+          </form>
         )}
 
-        {error && (
-          <div className="mt-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg flex items-center gap-3 text-red-800 dark:text-red-200 max-w-lg animate-fade-in mx-4">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <p>{error}</p>
-          </div>
-        )}
-
-        <div ref={resultRef} className="w-full">
+        <div ref={resultRef} className="w-full mt-6">
           {advice && <StrategyResult advice={advice} onReset={handleReset} />}
         </div>
 
