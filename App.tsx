@@ -14,11 +14,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   
-  // Password lock
-  const [unlocked, setUnlocked] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const PASSWORD = '$untzu';
+  const resultRef = useRef<HTMLDivElement>(null);
 
   // Theme
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -28,8 +24,6 @@ const App: React.FC = () => {
     }
     return 'dark';
   });
-
-  const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -54,13 +48,13 @@ const App: React.FC = () => {
   };
 
   // Handle consultation
-  const handleConsultation = async (query: string) => {
+  const handleConsultation = async (query: string, password: string) => {
     setLoading(true);
     setError(null);
     setAdvice(null);
 
     try {
-      const result = await getStrategicAdvice(query);
+      const result = await getStrategicAdvice(query, password); // pass password dynamically
       setAdvice(result);
 
       const newItem: HistoryItem = {
@@ -77,20 +71,9 @@ const App: React.FC = () => {
       }, 100);
     } catch (err: any) {
       console.error(err);
-      setError("The strategist is silent. Check your internet connection and try again.");
+      setError(err.message || "The strategist is silent. Check your internet connection and try again.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Password check
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === PASSWORD) {
-      setUnlocked(true);
-      setPasswordError(null);
-    } else {
-      setPasswordError("Incorrect password.");
     }
   };
 
@@ -120,54 +103,27 @@ const App: React.FC = () => {
       <Header theme={theme} toggleTheme={toggleTheme} />
 
       <main className="flex-grow flex flex-col items-center w-full relative z-10">
-        {!unlocked ? (
-          <form
-            onSubmit={handlePasswordSubmit}
-            className="max-w-md w-full mt-20 mx-auto p-6 bg-white dark:bg-jade-900 rounded-lg shadow-lg flex flex-col gap-4"
-          >
-            <h2 className="text-center text-2xl serif-title">Enter Password</h2>
-            <input
-              type="password"
-              className="w-full p-3 rounded border border-jade-300 dark:border-jade-700 bg-jade-50 dark:bg-jade-950 text-jade-900 dark:text-jade-100"
-              value={passwordInput}
-              onChange={e => setPasswordInput(e.target.value)}
-              placeholder="Enter password..."
-            />
-            <button
-              type="submit"
-              className="w-full py-2 bg-imperial-700 hover:bg-imperial-800 text-white font-semibold rounded"
-            >
-              Unlock
-            </button>
-            {passwordError && (
-              <p className="text-red-600 text-center">{passwordError}</p>
-            )}
-          </form>
-        ) : (
-          <>
-            {!advice && (
-              <ConsultationForm onSubmit={handleConsultation} isLoading={loading} />
-            )}
+        {!advice && (
+          <ConsultationForm onSubmit={handleConsultation} isLoading={loading} />
+        )}
 
-            {error && (
-              <div className="mt-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg flex items-center gap-3 text-red-800 dark:text-red-200 max-w-lg animate-fade-in mx-4">
-                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                <p>{error}</p>
-              </div>
-            )}
+        {error && (
+          <div className="mt-6 p-4 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg flex items-center gap-3 text-red-800 dark:text-red-200 max-w-lg animate-fade-in mx-4">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+            <p>{error}</p>
+          </div>
+        )}
 
-            <div ref={resultRef} className="w-full">
-              {advice && <StrategyResult advice={advice} onReset={handleReset} />}
-            </div>
+        <div ref={resultRef} className="w-full">
+          {advice && <StrategyResult advice={advice} onReset={handleReset} />}
+        </div>
 
-            {!advice && !loading && history.length > 0 && (
-              <HistoryList
-                history={history}
-                onSelect={handleSelectHistory}
-                onClear={handleClearHistory}
-              />
-            )}
-          </>
+        {!advice && !loading && history.length > 0 && (
+          <HistoryList
+            history={history}
+            onSelect={handleSelectHistory}
+            onClear={handleClearHistory}
+          />
         )}
       </main>
 
