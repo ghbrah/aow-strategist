@@ -2,7 +2,7 @@
 import { StrategyAdvice } from "../types";
 
 /**
- * Fetches a strategic advice from your Netlify function.
+ * Fetches strategic advice from your Netlify function.
  * @param userQuery - The user's query describing a conflict or challenge.
  * @returns A StrategyAdvice object matching your interface.
  */
@@ -13,11 +13,14 @@ export const getStrategicAdvice = async (userQuery: string): Promise<StrategyAdv
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query: userQuery }),
+      body: JSON.stringify({ 
+        query: userQuery,
+        password: "$untzu"  // Simple password for access control
+      }),
     });
 
     if (!response.ok) {
-      // Try to extract error message from server
+      // Attempt to extract error message from server
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `Server error: ${response.status}`);
     }
