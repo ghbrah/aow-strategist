@@ -6,7 +6,7 @@ interface StrategyRequestBody {
   query: string;
 }
 
-const apiKey = process.env.API_KEY;
+const apiKey = process.env.GEMINI_API_KEY;
 
 // Define the schema for the structured response
 const strategySchema: Schema = {
