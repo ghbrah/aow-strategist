@@ -1,29 +1,35 @@
+// netlify/functions/get-strategy.ts
 import { GoogleGenAI, Type, Schema, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 interface StrategyRequestBody {
   query: string;
-  password?: string; // Expect password from frontend
+  password?: string; // Add password field
 }
 
 const apiKey = process.env.GEMINI_API_KEY;
-const PASSWORD = '$untzu'; // Must match App.tsx
 
+// Password you set
+const PASSWORD = "$untzu";
+
+// Define the schema
 const strategySchema: Schema = {
   type: Type.OBJECT,
   properties: {
-    title: { type: Type.STRING, description: "Strategy title (36 Stratagems format required)." },
-    originalQuote: { type: Type.STRING, description: "Relevant quote from Sun Tzu or 36 Stratagems." },
-    interpretation: { type: Type.STRING, description: "Detailed analysis of conflict dynamics." },
-    actionableAdvice: { type: Type.ARRAY, items: { type: Type.STRING }, description: "3 tactical steps." },
-    chineseCharacter: { type: Type.STRING, description: "Relevant Chinese character." },
-    characterExplanation: { type: Type.STRING, description: "Explanation of character meaning." }
+    title: { type: Type.STRING },
+    originalQuote: { type: Type.STRING },
+    interpretation: { type: Type.STRING },
+    actionableAdvice: { type: Type.ARRAY, items: { type: Type.STRING } },
+    chineseCharacter: { type: Type.STRING },
+    characterExplanation: { type: Type.STRING },
   },
   required: ["title", "originalQuote", "interpretation", "actionableAdvice", "chineseCharacter", "characterExplanation"],
 };
 
 export default async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" } });
+    return new Response("ok", {
+      headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" },
+    });
   }
 
   if (req.method !== "POST") {
@@ -31,38 +37,26 @@ export default async (req: Request) => {
   }
 
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "Server configuration error. GEMINI_API_KEY missing." }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "GEMINI_API_KEY missing in Netlify environment variables." }), { status: 500 });
   }
 
   try {
     const body = await req.json() as StrategyRequestBody;
-    const userQuery = body.query;
-    const password = body.password;
 
-    // Check password
-    if (password !== PASSWORD) {
-      return new Response(JSON.stringify({ error: "Unauthorized. Invalid password." }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!body.password || body.password !== PASSWORD) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid password." }), { status: 401 });
     }
 
+    const userQuery = body.query;
     if (!userQuery) {
-      return new Response(JSON.stringify({ error: "Query is required." }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "Query is required" }), { status: 400 });
     }
 
     const ai = new GoogleGenAI({ apiKey });
     const modelId = "gemini-2.5-flash";
 
     const systemInstruction = `
-      You are a master strategist following Sun Tzu and the 36 Stratagems...
-      (rest of instructions remain the same)
+      You are a master strategist. Analyze the user's situation and provide detailed strategic advice.
     `;
 
     const response = await ai.models.generateContent({
@@ -80,16 +74,12 @@ export default async (req: Request) => {
       },
     });
 
-    if (!response.text) throw new Error("No response received from the strategist.");
+    if (!response.text) throw new Error("No response from strategist");
 
     return new Response(response.text, {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
-
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message || "Internal Server Error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: error.message || "Internal Server Error" }), { status: 500 });
   }
 };
