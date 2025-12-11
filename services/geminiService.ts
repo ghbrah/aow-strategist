@@ -1,9 +1,13 @@
+// src/services/geminiService.ts
 import { StrategyAdvice } from "../types";
 
+/**
+ * Fetches a strategic advice from your Netlify function.
+ * @param userQuery - The user's query describing a conflict or challenge.
+ * @returns A StrategyAdvice object matching your interface.
+ */
 export const getStrategicAdvice = async (userQuery: string): Promise<StrategyAdvice> => {
   try {
-    // We now call our own backend API (Netlify Function)
-    // The netlify.toml redirects /api/* to the function
     const response = await fetch('/.netlify/functions/get-strategy', {
       method: 'POST',
       headers: {
@@ -13,15 +17,31 @@ export const getStrategicAdvice = async (userQuery: string): Promise<StrategyAdv
     });
 
     if (!response.ok) {
+      // Try to extract error message from server
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `Server error: ${response.status}`);
     }
 
-    const data = await response.json();
-    return data as StrategyAdvice;
+    const data: StrategyAdvice = await response.json();
 
-  } catch (error) {
+    // Optional: ensure optional fields exist
+    return {
+      title: data.title,
+      originalQuote: data.originalQuote,
+      interpretation: data.interpretation,
+      actionableAdvice: data.actionableAdvice,
+      chineseCharacter: data.chineseCharacter || undefined,
+      characterExplanation: data.characterExplanation || undefined,
+    };
+
+  } catch (error: any) {
     console.error("Error fetching strategy:", error);
+
+    // Handle API Key missing errors specifically
+    if (error.message && (error.message.includes("API Key") || error.message.includes("API_KEY"))) {
+      throw new Error("Configuration Error: Missing API Key. Please check your Netlify environment variables.");
+    }
+
     throw error;
   }
 };
